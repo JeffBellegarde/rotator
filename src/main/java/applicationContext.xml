@@ -11,7 +11,6 @@
     <constructor-arg value="AppleScript" />
   </bean>
 
-
   <bean name="rotatorApplication" class="org.bellegar.rotator.RotatorApplicationImpl">
     <property name="notifyGrowlOfDesktopChange" ref="notifyGrowl" />
     <property name="changeDesktop" ref="changeDesktop" />
@@ -49,16 +48,13 @@
   <bean name="changeDesktop" class="org.bellegar.rotator.applescript.ChangeDesktopCommand">
     <property name="scriptEngine" ref="appleScriptEngine" />
     <property name="command">
-    <!--  
-      <value><![CDATA[
-   tell application "System Events" 
+   tell application "System Events"
        tell every desktop
-           set picture rotation to 0 
-           set picture to file "%s"  
+           set picture rotation to 0
+           set picture to file "%s"
        end tell
    end tell
     ]]></value>
-    -->
       <value><![CDATA[
  set this_item to "%s"
 tell application "Image Events"
