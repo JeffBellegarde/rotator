@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+  http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+  <bean class="org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor" />
+
+  <context:component-scan base-package="com.bellegar.rotator" />
+  <bean name="scriptEngineManager" class="javax.script.ScriptEngineManager" />
+  <bean name="appleScriptEngine" factory-bean="scriptEngineManager" factory-method="getEngineByName">
+    <constructor-arg value="AppleScript" />
+  </bean>
+
+  <bean name="rotatorApplication" class="org.bellegar.rotator.RotatorApplicationImpl">
+    <property name="notifyGrowlOfDesktopChange" ref="notifyGrowl" />
+    <property name="changeDesktop" ref="changeDesktop" />
+  </bean>
+
+  <bean name="groupMovementActionListener" abstract="true" class="org.bellegar.rotator.GroupMovementActionListener"
+    p:desktopChangeEvent-ref="rotatorUI" p:rotatorApplication-ref="rotatorApplication" p:timer-ref="timer" />
+
+  <bean name="nextActionListener" parent="groupMovementActionListener" p:level="FILE" p:direction="NEXT" />
+  <bean name="previousActionListener" parent="groupMovementActionListener" p:level="FILE" p:direction="PREVIOUS" />
+  <bean name="nextGroupActionListener" parent="groupMovementActionListener" p:level="GROUP" p:direction="NEXT" />
+  <bean name="previousGroupActionListener" parent="groupMovementActionListener" p:level="GROUP" p:direction="PREVIOUS" />
+  <bean name="exitActionListener" class="org.bellegar.rotator.ExitActionListener" p:rotatorApplication-ref="rotatorApplication" />
+  <bean name="hideActionListener" class="org.bellegar.rotator.HideActionListener" p:rotatorApplication-ref="rotatorApplication"
+    p:timer-ref="timer" />
+
+  <bean name="timer" class="javax.swing.Timer">
+    <constructor-arg value="30000" type="int" />
+    <constructor-arg type="java.awt.event.ActionListener">
+      <null></null>
+    </constructor-arg>
+  </bean>
+
+  <bean name="notifyGrowl" class="org.bellegar.rotator.applescript.DesktopChangeEventImpl">
+    <property name="scriptEngine" ref="appleScriptEngine" />
+    <property name="command">
+      <value><![CDATA[
+   tell application "GrowlHelperApp" 
+     notify with name "Desktop Changed" title "Desktop Changed" description "Changed to %s %d/%d" image from location "file://%s" application name "Image Rotator" 
+   end tell
+    ]]></value>
+    </property>
+  </bean>
+
+  <bean name="changeDesktop" class="org.bellegar.rotator.applescript.ChangeDesktopCommand">
+    <property name="scriptEngine" ref="appleScriptEngine" />
+    <property name="command">
+      <value><![CDATA[
+   tell application "System Events" 
+       tell current desktop
+           set picture rotation to 0 
+           set picture to file "%s"  
+       end tell
+   end tell
+    ]]></value>
+    </property>
+  </bean>
+
+  <bean name="registerWithGrowlCommand" class="org.bellegar.rotator.applescript.RegisterWithGrowlCommand" p:scriptEngine-ref="appleScriptEngine">
+    <property name="command">
+      <value><![CDATA[
+   tell application "GrowlHelperApp" 
+       set the allNotificationsList to {"Desktop Changed"} 
+       set the enabledNotificationsList to {"Desktop Changed"} 
+       register as application "Image Rotator" all notifications allNotificationsList default notifications enabledNotificationsList 
+   end tell
+    ]]></value>
+    </property>
+  </bean>
+
+  <bean name="rotatorUI" class="org.bellegar.rotator.RotatorUI">
+    <property name="timer" ref="timer" />
+    <property name="nextActionListener" ref="nextActionListener" />
+    <property name="previousActionListener" ref="previousActionListener" />
+    <property name="nextGroupActionListener" ref="nextGroupActionListener" />
+    <property name="previousGroupActionListener" ref="previousGroupActionListener" />
+    <property name="exitActionListener" ref="exitActionListener" />
+    <property name="hideActionListener" ref="hideActionListener" />
+  </bean>
+
+  <bean name="grouper" class="org.bellegar.rotator.Grouper" />
+  <bean name="bootstrap" class="org.bellegar.rotator.Bootstrap" p:rotatorUI-ref="rotatorUI" p:application-ref="rotatorApplication"
+    p:grouper-ref="grouper" p:pathname="/Users/jeffbellegarde/pics"
+    p:registerWithGrowlCommand-ref="registerWithGrowlCommand" />
+</beans>
